@@ -1,32 +1,36 @@
 package com.football.api.service;
 
+import com.football.api.exception.DatabaseException;
+import com.football.api.exception.LeagueAlreadyExistsException;
+import com.football.api.exception.NetworkException;
 import com.football.api.exception.NotFoundException;
 import com.google.gson.JsonObject;
-
-// import spark.*;
+import org.javalite.activejdbc.Base;
 
 import java.io.IOException;
-import java.sql.SQLException;
 
 public class ImportService {
 
-    public static int importService(String league) {
+    public static void importLeague(String leagueCode)
+            throws LeagueAlreadyExistsException, NotFoundException, NetworkException, DatabaseException {
 
-        if (LeagueService.checkInDatabase(league))
-            return 409;
+        if (LeagueService.checkInDatabase(leagueCode)) {
+            throw new LeagueAlreadyExistsException("League with code '" + leagueCode + "' already exists.");
+        }
+
         try {
-            JsonObject competitions = APIClientService.getLeagueFromApi(league);
-            
+            Base.openTransaction();
+
+            JsonObject competitions = APIClientService.getLeagueFromApi(leagueCode);
             LeagueService.insertCompetition(competitions);
 
-        } catch (IOException | InterruptedException e) {
-            return 504; // Gateway Timeout for network/concurrency issues
-        } catch (SQLException e) {
-            return 500; // Internal Server Error for DB issues
-        } catch (NotFoundException e) {
-            return 404;
-        } 
-		return 201; 
+            Base.commitTransaction();
+        } catch (IOException e) {
+            Base.rollbackTransaction();
+            throw new NetworkException("Failed to fetch data from external API.", e);
+        } catch (Exception e) {
+            Base.rollbackTransaction();
+            throw new DatabaseException("Failed to import data into the database.", e);
+        }
     }
-
 }

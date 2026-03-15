@@ -1,35 +1,38 @@
 package com.football.api.controller;
 
-import com.football.api.service.*;
+import com.football.api.exception.DatabaseException;
+import com.football.api.exception.LeagueAlreadyExistsException;
+import com.football.api.exception.NetworkException;
+import com.football.api.exception.NotFoundException;
+import com.football.api.service.ImportService;
 import com.google.gson.JsonObject;
-
-import spark.*;
+import spark.Request;
+import spark.Response;
 
 public class ImportController {
-	
-	public static JsonObject importLeague (Request request, Response response) {
 
-		String league = request.params(":leagueCode");
+    public static JsonObject importLeague(Request request, Response response) {
+        String leagueCode = request.params(":leagueCode");
+        JsonObject responseJson = new JsonObject();
 
-		int status = ImportService.importService(league);
+        try {
+            ImportService.importLeague(leagueCode);
+            response.status(201); // Created
+            responseJson.addProperty("message", "Successfully imported league: " + leagueCode);
+        } catch (LeagueAlreadyExistsException e) {
+            response.status(409); // Conflict
+            responseJson.addProperty("message", e.getMessage());
+        } catch (NotFoundException e) {
+            response.status(404); // Not Found
+            responseJson.addProperty("message", "League code not found by the external API.");
+        } catch (NetworkException e) {
+            response.status(504); // Gateway Timeout
+            responseJson.addProperty("message", "A network error occurred while fetching data.");
+        } catch (DatabaseException e) {
+            response.status(500); // Internal Server Error
+            responseJson.addProperty("message", "An error occurred while writing to the database.");
+        }
 
-		response.status(status);
-		return getOutputMessage(status);
-      }
-
-	private static JsonObject getOutputMessage(int status) {
-		JsonObject msg = new JsonObject();
-		switch(status) {
-			case 201 : 	msg.addProperty("message", "Successfully imported");
-					   	break;
-			case 409 : 	msg.addProperty("message", "League already imported");
-					   	break;
-			case 404 : 	msg.addProperty("message", "Not found");
-						break;
-			case 504 : 	msg.addProperty("message", "Server error");
-						break;
-			default  : msg.addProperty("message", "Internal server error");
-		}
-		return msg;
-	}
+        return responseJson;
+    }
 }

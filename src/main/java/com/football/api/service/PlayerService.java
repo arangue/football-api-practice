@@ -1,7 +1,6 @@
 package com.football.api.service;
 
 import java.sql.SQLException;
-import java.util.List;
 
 import com.football.api.exception.NotFoundException;
 import com.football.api.model.*;

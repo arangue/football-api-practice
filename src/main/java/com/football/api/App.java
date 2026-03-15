@@ -3,7 +3,6 @@ package com.football.api;
 import static spark.Spark.*;
 
 import org.javalite.activejdbc.*;
-// import com.football.api.model.*;
 import com.football.api.controller.*;
 
 public class App {
@@ -37,7 +36,7 @@ public class App {
           response.type("application/json");
       });
 
-      get("/import-league/:leagueCode", ImportController::importLeague);
+      post("/import-league/:leagueCode", ImportController::importLeague);
 
       get("/total-players/:leagueCode", PlayerController::totalPlayers);
 
@@ -46,7 +45,6 @@ public class App {
     private static void enableCORS(final String origin, final String methods, final String headers) {
 
       options("/*", (request, response) -> {
-      /**/
           String accessControlRequestHeaders = request.headers("Access-Control-Request-Headers");
           if (accessControlRequestHeaders != null) {
               response.header("Access-Control-Allow-Headers", accessControlRequestHeaders);
