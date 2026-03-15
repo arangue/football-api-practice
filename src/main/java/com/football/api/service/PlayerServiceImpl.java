@@ -2,12 +2,16 @@ package com.football.api.service;
 
 import java.sql.SQLException;
 
+import javax.inject.Singleton;
+
 import com.football.api.exception.NotFoundException;
 import com.football.api.model.*;
 
-public class PlayerService {
+@Singleton
+public class PlayerServiceImpl implements IPlayerService {
 
-	public static int countPlayersByLeague(String league) throws NotFoundException, SQLException {
+    @Override
+	public int countPlayersByLeague(String league) throws NotFoundException, SQLException {
         
         if(!checkInDatabase(league)){
             throw new NotFoundException(404, "Not found", null);
@@ -17,11 +21,11 @@ public class PlayerService {
 
 	}
 
-    private static boolean checkInDatabase(String league) {
+    private boolean checkInDatabase(String league) {
         return Competition.findFirst("code = ?", league) != null;
     }
 
-    private static int totalplayers(String league) throws SQLException{
+    private int totalplayers(String league) throws SQLException{
         Competition c = Competition.findFirst("code = ?", league);
         if (c == null) {
             return 0;

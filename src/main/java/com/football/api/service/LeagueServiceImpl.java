@@ -11,29 +11,40 @@ import org.javalite.activejdbc.DBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-public class LeagueService {
+public class LeagueServiceImpl implements ILeagueService {
 
-    private static final Logger logger = LoggerFactory.getLogger(LeagueService.class);
+    private static final Logger logger = LoggerFactory.getLogger(LeagueServiceImpl.class);
+    private final IAPIClientService apiClientService;
 
-    public static boolean checkInDatabase(String league) {
+    @Inject
+    public LeagueServiceImpl(IAPIClientService apiClientService) {
+        this.apiClientService = apiClientService;
+    }
+
+    @Override
+    public boolean checkInDatabase(String league) {
         logger.debug("Checking if league '{}' exists in database.", league);
         return Competition.findFirst("code = ?", league) != null;
     }
 
-    public static boolean teamExistOnDB(int team) {
+    @Override
+    public boolean teamExistOnDB(int team) {
         return Team.findById(team) != null;
     }
 
-    public static boolean playerExistOnDB(int player) {
+    @Override
+    public boolean playerExistOnDB(int player) {
         return Player.findById(player) != null;
     }
 
-    public static void insertCompetition(JsonObject competitions) throws IOException, NotFoundException, DBException {
+    @Override
+    public void insertCompetition(JsonObject competitions) throws IOException, NotFoundException, DBException {
         int id = competitions.get("id").getAsInt();
         String leagueName = competitions.get("name").getAsString();
         String leagueCode = competitions.get("code").getAsString();
@@ -47,11 +58,12 @@ public class LeagueService {
         c.set("areaName", areaName);
         c.insert();
 
-        JsonObject teams = APIClientService.getTeamsFromApi(leagueCode);
+        JsonObject teams = apiClientService.getTeamsFromApi(leagueCode);
         insertTeam(teams, id);
     }
 
-    public static void insertTeam(JsonObject t, int idComp) throws IOException, NotFoundException, DBException {
+    @Override
+    public void insertTeam(JsonObject t, int idComp) throws IOException, NotFoundException, DBException {
         JsonArray teams = t.get("teams").getAsJsonArray();
         logger.info("Processing {} teams for competition ID: {}", teams.size(), idComp);
 
@@ -89,7 +101,8 @@ public class LeagueService {
         }
     }
 
-    public static void insertPlayer(int idTeam, JsonArray players) throws DBException {
+    @Override
+    public void insertPlayer(int idTeam, JsonArray players) throws DBException {
         logger.info("Processing {} players for team ID: {}", players.size(), idTeam);
         for (JsonElement t : players) {
             int idPlayer = t.getAsJsonObject().get("id").getAsInt();
@@ -120,11 +133,11 @@ public class LeagueService {
         }
     }
 
-    private static String getNullAsEmptyString(JsonElement jsonElement) {
+    private String getNullAsEmptyString(JsonElement jsonElement) {
         return (jsonElement == null || jsonElement.isJsonNull()) ? null : jsonElement.getAsString();
     }
 
-    private static LocalDate convertDate(String dateString) {
+    private LocalDate convertDate(String dateString) {
         if (dateString == null) return null;
         if (dateString.contains("T")) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);

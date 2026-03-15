@@ -8,25 +8,35 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import javax.inject.Inject;
 
 import java.io.IOException;
 
-public class APIClientService {
+public class APIClientServiceImpl implements IAPIClientService {
 
     private static final String HOST = "https://api.football-data.org";
     private static final String API_KEY = System.getenv("API_KEY");
-    private static final OkHttpClient client = new OkHttpClient();
-    private static final Logger logger = LoggerFactory.getLogger(APIClientService.class);
+    private final OkHttpClient client;
+    private final Gson gson;
+    private static final Logger logger = LoggerFactory.getLogger(APIClientServiceImpl.class);
 
-    public static JsonObject getLeagueFromApi(String league) throws IOException, NotFoundException {
+    @Inject
+    public APIClientServiceImpl(OkHttpClient client, Gson gson) {
+        this.client = client;
+        this.gson = gson;
+    }
+
+    @Override
+    public JsonObject getLeagueFromApi(String league) throws IOException, NotFoundException {
         return makeApiCall("/v4/competitions/" + league);
     }
 
-    public static JsonObject getTeamsFromApi(String league) throws IOException, NotFoundException {
+    @Override
+    public JsonObject getTeamsFromApi(String league) throws IOException, NotFoundException {
         return makeApiCall("/v4/competitions/" + league + "/teams");
     }
 
-    private static JsonObject makeApiCall(String path) throws IOException, NotFoundException {
+    private JsonObject makeApiCall(String path) throws IOException, NotFoundException {
         if (API_KEY == null || API_KEY.isEmpty()) {
             logger.error("API_KEY environment variable is not set.");
             throw new IllegalStateException("API_KEY environment variable is not set");
@@ -49,7 +59,7 @@ public class APIClientService {
 
             logger.info("Successfully received data from API endpoint: {}", url);
             String body = response.body().string();
-            return new Gson().fromJson(body, JsonObject.class);
+            return gson.fromJson(body, JsonObject.class);
         } catch (IOException e) {
             logger.error("Error during API call to {}", url, e);
             throw e;

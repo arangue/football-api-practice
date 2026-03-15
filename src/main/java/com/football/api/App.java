@@ -3,11 +3,16 @@ package com.football.api;
 import static spark.Spark.*;
 
 import org.javalite.activejdbc.*;
-import com.football.api.controller.*;
+import com.football.api.controller.ImportController;
+import com.football.api.controller.PlayerController;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 
 public class App {
     
     public static void main( String[] args ){
+
+      Injector injector = Guice.createInjector(new FootballModule());
 
       port(4567);
 
@@ -36,9 +41,12 @@ public class App {
           response.type("application/json");
       });
 
-      post("/import-league/:leagueCode", ImportController::importLeague);
+      ImportController importController = injector.getInstance(ImportController.class);
+      PlayerController playerController = injector.getInstance(PlayerController.class);
 
-      get("/total-players/:leagueCode", PlayerController::totalPlayers);
+      post("/import-league/:leagueCode", importController::importLeague);
+
+      get("/total-players/:leagueCode", playerController::totalPlayers);
 
     }
 

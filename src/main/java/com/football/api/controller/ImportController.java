@@ -4,19 +4,30 @@ import com.football.api.exception.DatabaseException;
 import com.football.api.exception.LeagueAlreadyExistsException;
 import com.football.api.exception.NetworkException;
 import com.football.api.exception.NotFoundException;
-import com.football.api.service.ImportService;
+import com.football.api.service.IImportService;
 import com.google.gson.JsonObject;
 import spark.Request;
 import spark.Response;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class ImportController {
 
-    public static JsonObject importLeague(Request request, Response response) {
+    private final IImportService importService;
+
+    @Inject
+    public ImportController(IImportService importService) {
+        this.importService = importService;
+    }
+
+    public JsonObject importLeague(Request request, Response response) {
         String leagueCode = request.params(":leagueCode");
         JsonObject responseJson = new JsonObject();
 
         try {
-            ImportService.importLeague(leagueCode);
+            importService.importLeague(leagueCode);
             response.status(201); // Created
             responseJson.addProperty("message", "Successfully imported league: " + leagueCode);
         } catch (LeagueAlreadyExistsException e) {
